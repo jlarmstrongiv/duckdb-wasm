@@ -558,11 +558,13 @@ web::Result<std::string> WebDB::Connection::DescribePreparedStatement(size_t sta
         }
         doc.AddMember("parameters", parameters, alloc);
 
-        // Result columns in order
+        // Result columns in order. Without a resolved plan DuckDB only stores an "unknown" placeholder, leave it out
+        auto columns_known = stmt.MetadataAvailable();
+        doc.AddMember("columnsKnown", columns_known, alloc);
         auto& names = stmt.GetNames();
         auto& types = stmt.GetTypes();
         rapidjson::Value columns{rapidjson::kArrayType};
-        for (size_t i = 0; i < names.size() && i < types.size(); ++i) {
+        for (size_t i = 0; columns_known && i < names.size() && i < types.size(); ++i) {
             rapidjson::Value column{rapidjson::kObjectType};
             column.AddMember("name", rapidjson::Value{names[i].GetIdentifierName(), alloc}, alloc);
             column.AddMember("type", rapidjson::Value{types[i].ToString(), alloc}, alloc);

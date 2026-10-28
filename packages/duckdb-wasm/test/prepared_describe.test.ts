@@ -19,6 +19,7 @@ const DESCRIBE_TESTS: DescribeTest[] = [
         expected: {
             statementType: 'SELECT',
             returnType: 'QUERY_RESULT',
+            columnsKnown: true,
             parameters: [
                 { name: 'id', type: 'INTEGER' },
                 { name: 'lvl', type: 'VARCHAR' },
@@ -35,6 +36,7 @@ const DESCRIBE_TESTS: DescribeTest[] = [
         expected: {
             statementType: 'SELECT',
             returnType: 'QUERY_RESULT',
+            columnsKnown: true,
             parameters: [
                 { name: '1', type: 'INTEGER' },
                 { name: '2', type: 'VARCHAR' },
@@ -48,6 +50,7 @@ const DESCRIBE_TESTS: DescribeTest[] = [
         expected: {
             statementType: 'SELECT',
             returnType: 'QUERY_RESULT',
+            columnsKnown: true,
             parameters: [
                 { name: '1', type: 'INTEGER' },
                 { name: '2', type: 'VARCHAR' },
@@ -68,6 +71,7 @@ const DESCRIBE_TESTS: DescribeTest[] = [
         expected: {
             statementType: 'SELECT',
             returnType: 'QUERY_RESULT',
+            columnsKnown: true,
             parameters: [],
             columns: [
                 { name: 'list', type: 'VARCHAR[]' },
@@ -82,11 +86,12 @@ const DESCRIBE_TESTS: DescribeTest[] = [
     },
     {
         name: 'from first',
-        sql: 'from describe_t select msg, id + $delta as next_id',
+        sql: 'from describe_t select msg, id + 1 as next_id where level = $lvl',
         expected: {
             statementType: 'SELECT',
             returnType: 'QUERY_RESULT',
-            parameters: [{ name: 'delta', type: 'INTEGER' }],
+            columnsKnown: true,
+            parameters: [{ name: 'lvl', type: 'VARCHAR' }],
             columns: [
                 { name: 'msg', type: 'VARCHAR' },
                 { name: 'next_id', type: 'INTEGER' },
@@ -99,6 +104,7 @@ const DESCRIBE_TESTS: DescribeTest[] = [
         expected: {
             statementType: 'SELECT',
             returnType: 'QUERY_RESULT',
+            columnsKnown: true,
             parameters: [{ name: '1', type: 'BIGINT' }],
             columns: [
                 { name: 'id', type: 'INTEGER' },
@@ -112,6 +118,7 @@ const DESCRIBE_TESTS: DescribeTest[] = [
         expected: {
             statementType: 'SELECT',
             returnType: 'QUERY_RESULT',
+            columnsKnown: true,
             parameters: [],
             columns: [
                 { name: 'id', type: 'INTEGER' },
@@ -125,6 +132,7 @@ const DESCRIBE_TESTS: DescribeTest[] = [
         expected: {
             statementType: 'SELECT',
             returnType: 'QUERY_RESULT',
+            columnsKnown: true,
             parameters: [],
             columns: [
                 { name: 'level', type: 'VARCHAR' },
@@ -139,8 +147,9 @@ const DESCRIBE_TESTS: DescribeTest[] = [
         expected: {
             statementType: 'SELECT',
             returnType: 'QUERY_RESULT',
+            columnsKnown: false,
             parameters: [{ name: 'x', type: 'UNKNOWN' }],
-            columns: [{ name: 'y', type: 'UNKNOWN' }],
+            columns: [],
         },
     },
     {
@@ -149,6 +158,7 @@ const DESCRIBE_TESTS: DescribeTest[] = [
         expected: {
             statementType: 'INSERT',
             returnType: 'CHANGED_ROWS',
+            columnsKnown: true,
             parameters: [
                 { name: '1', type: 'INTEGER' },
                 { name: '2', type: 'VARCHAR' },
@@ -162,6 +172,7 @@ const DESCRIBE_TESTS: DescribeTest[] = [
         expected: {
             statementType: 'INSERT',
             returnType: 'QUERY_RESULT',
+            columnsKnown: true,
             parameters: [
                 { name: 'id', type: 'INTEGER' },
                 { name: 'msg', type: 'VARCHAR' },
@@ -176,15 +187,16 @@ const DESCRIBE_TESTS: DescribeTest[] = [
 
 export function testPreparedDescribe(db: () => duckdb.DuckDBBindings): void {
     let conn: duckdb.DuckDBConnection;
-    beforeEach(() => {
-        conn = db().connect();
-        for (const sql of SETUP) conn.query(sql);
-    });
-    afterEach(() => {
-        for (const sql of TEARDOWN) conn.query(sql);
-        conn.close();
-    });
     describe('Prepared statement describe', () => {
+        beforeEach(() => {
+            conn = db().connect();
+            for (const sql of SETUP) conn.query(sql);
+        });
+        afterEach(() => {
+            for (const sql of TEARDOWN) conn.query(sql);
+            conn.close();
+        });
+
         for (const test of DESCRIBE_TESTS) {
             it(test.name, () => {
                 const stmt = conn.prepare(test.sql);
@@ -214,15 +226,16 @@ export function testPreparedDescribe(db: () => duckdb.DuckDBBindings): void {
 
 export function testPreparedDescribeAsync(db: () => duckdb.AsyncDuckDB): void {
     let conn: duckdb.AsyncDuckDBConnection;
-    beforeEach(async () => {
-        conn = await db().connect();
-        for (const sql of SETUP) await conn.query(sql);
-    });
-    afterEach(async () => {
-        for (const sql of TEARDOWN) await conn.query(sql);
-        await conn.close();
-    });
     describe('Prepared statement describe Async', () => {
+        beforeEach(async () => {
+            conn = await db().connect();
+            for (const sql of SETUP) await conn.query(sql);
+        });
+        afterEach(async () => {
+            for (const sql of TEARDOWN) await conn.query(sql);
+            await conn.close();
+        });
+
         for (const test of DESCRIBE_TESTS) {
             it(test.name, async () => {
                 const stmt = await conn.prepare(test.sql);

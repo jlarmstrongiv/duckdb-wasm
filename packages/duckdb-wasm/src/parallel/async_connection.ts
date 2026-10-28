@@ -188,6 +188,7 @@ export class AsyncPreparedStatement<T extends { [key: string]: arrow.DataType } 
      * Returns the statement type, the parameters in index order and the result columns, each with its DuckDB type
      * string (e.g. INTEGER, VARCHAR[], DECIMAL(10,2)). Positional parameters are named "1", "2", ...
      * A parameter whose type DuckDB cannot resolve when preparing (e.g. `select $x`) has the type UNKNOWN.
+     * The result columns are then not known before execution either: columnsKnown is false and columns is empty.
      * Throws if the statement has been closed.
      */
     public async describe(): Promise<PreparedStatementDescription> {

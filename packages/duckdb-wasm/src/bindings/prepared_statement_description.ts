@@ -14,6 +14,11 @@ export interface PreparedStatementDescription {
     returnType: string;
     /** The parameters in index order */
     parameters: PreparedStatementField[];
-    /** The result columns in order */
+    /**
+     * Whether DuckDB could resolve the result columns when preparing. It cannot when a parameter type is unresolved
+     * (e.g. `select $x`) or the statement expands into several; the columns are then known only at execution
+     */
+    columnsKnown: boolean;
+    /** The result columns in order, empty if columnsKnown is false */
     columns: PreparedStatementField[];
 }

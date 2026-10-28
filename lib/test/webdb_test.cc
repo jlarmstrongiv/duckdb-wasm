@@ -76,25 +76,28 @@ TEST(WebDB, DescribePreparedStatement) {
     ASSERT_TRUE(stmt.ok()) << stmt.status().message();
     auto desc = conn.DescribePreparedStatement(*stmt);
     ASSERT_TRUE(desc.ok()) << desc.status().message();
-    ASSERT_EQ(*desc, R"JSON({"statementType":"SELECT","returnType":"QUERY_RESULT",)JSON"
-                     R"JSON("parameters":[{"name":"id","type":"INTEGER"},{"name":"lvl","type":"VARCHAR"}],)JSON"
-                     R"JSON("columns":[{"name":"id","type":"INTEGER"},{"name":"msg","type":"VARCHAR"}]})JSON");
+    ASSERT_EQ(
+        *desc,
+        R"JSON({"statementType":"SELECT","returnType":"QUERY_RESULT",)JSON"
+        R"JSON("parameters":[{"name":"id","type":"INTEGER"},{"name":"lvl","type":"VARCHAR"}],"columnsKnown":true,)JSON"
+        R"JSON("columns":[{"name":"id","type":"INTEGER"},{"name":"msg","type":"VARCHAR"}]})JSON");
 
     auto insert = conn.CreatePreparedStatement("INSERT INTO t (id, msg) VALUES (?, ?)");
     ASSERT_TRUE(insert.ok()) << insert.status().message();
     desc = conn.DescribePreparedStatement(*insert);
     ASSERT_TRUE(desc.ok()) << desc.status().message();
-    ASSERT_EQ(*desc, R"JSON({"statementType":"INSERT","returnType":"CHANGED_ROWS",)JSON"
-                     R"JSON("parameters":[{"name":"1","type":"INTEGER"},{"name":"2","type":"VARCHAR"}],)JSON"
-                     R"JSON("columns":[{"name":"Count","type":"BIGINT"}]})JSON");
+    ASSERT_EQ(
+        *desc,
+        R"JSON({"statementType":"INSERT","returnType":"CHANGED_ROWS",)JSON"
+        R"JSON("parameters":[{"name":"1","type":"INTEGER"},{"name":"2","type":"VARCHAR"}],"columnsKnown":true,)JSON"
+        R"JSON("columns":[{"name":"Count","type":"BIGINT"}]})JSON");
 
     auto unknown = conn.CreatePreparedStatement("SELECT $x AS y");
     ASSERT_TRUE(unknown.ok()) << unknown.status().message();
     desc = conn.DescribePreparedStatement(*unknown);
     ASSERT_TRUE(desc.ok()) << desc.status().message();
     ASSERT_EQ(*desc, R"JSON({"statementType":"SELECT","returnType":"QUERY_RESULT",)JSON"
-                     R"JSON("parameters":[{"name":"x","type":"UNKNOWN"}],)JSON"
-                     R"JSON("columns":[{"name":"y","type":"UNKNOWN"}]})JSON");
+                     R"JSON("parameters":[{"name":"x","type":"UNKNOWN"}],"columnsKnown":false,"columns":[]})JSON");
 
     ASSERT_TRUE(conn.ClosePreparedStatement(*stmt).ok());
     desc = conn.DescribePreparedStatement(*stmt);

@@ -525,6 +525,60 @@ web::Result<std::shared_ptr<web::Buffer>> WebDB::Connection::SendPreparedStateme
     return StreamQueryResult(std::move(*result));
 }
 
+web::Result<std::string> WebDB::Connection::DescribePreparedStatement(size_t statement_id) {
+    try {
+        auto it = prepared_statements_.find(statement_id);
+        if (it == prepared_statements_.end())
+            return web::Status{web::StatusCode::KeyError, "No prepared statement found with ID"};
+        auto& stmt = *it->second;
+
+        rapidjson::Document doc;
+        doc.SetObject();
+        auto& alloc = doc.GetAllocator();
+        doc.AddMember("statementType", rapidjson::Value{StatementTypeToString(stmt.GetStatementType()), alloc}, alloc);
+        doc.AddMember("returnType",
+                      rapidjson::Value{StatementReturnTypeToString(stmt.GetStatementProperties().return_type), alloc},
+                      alloc);
+
+        // Parameters in index order, named "1", "2", ... when positional
+        std::vector<std::pair<idx_t, const Identifier*>> params;
+        for (auto& [identifier, index] : stmt.GetNamedParameterMap()) {
+            params.emplace_back(index, &identifier);
+        }
+        std::sort(params.begin(), params.end(), [](auto& l, auto& r) { return l.first < r.first; });
+        rapidjson::Value parameters{rapidjson::kArrayType};
+        for (auto& [index, identifier] : params) {
+            // A parameter whose type could not be resolved when preparing is reported as UNKNOWN
+            LogicalType type = LogicalType::UNKNOWN;
+            stmt.TryGetParameterType(*identifier, type);
+            rapidjson::Value param{rapidjson::kObjectType};
+            param.AddMember("name", rapidjson::Value{identifier->GetIdentifierName(), alloc}, alloc);
+            param.AddMember("type", rapidjson::Value{type.ToString(), alloc}, alloc);
+            parameters.PushBack(param, alloc);
+        }
+        doc.AddMember("parameters", parameters, alloc);
+
+        // Result columns in order
+        auto& names = stmt.GetNames();
+        auto& types = stmt.GetTypes();
+        rapidjson::Value columns{rapidjson::kArrayType};
+        for (size_t i = 0; i < names.size() && i < types.size(); ++i) {
+            rapidjson::Value column{rapidjson::kObjectType};
+            column.AddMember("name", rapidjson::Value{names[i].GetIdentifierName(), alloc}, alloc);
+            column.AddMember("type", rapidjson::Value{types[i].ToString(), alloc}, alloc);
+            columns.PushBack(column, alloc);
+        }
+        doc.AddMember("columns", columns, alloc);
+
+        rapidjson::StringBuffer strbuf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer{strbuf};
+        doc.Accept(writer);
+        return strbuf.GetString();
+    } catch (std::exception& e) {
+        return web::Status{web::StatusCode::ExecutionError, e.what()};
+    }
+}
+
 web::Status WebDB::Connection::ClosePreparedStatement(size_t statement_id) {
     auto it = prepared_statements_.find(statement_id);
     if (it == prepared_statements_.end())

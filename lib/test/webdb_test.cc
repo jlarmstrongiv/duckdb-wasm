@@ -66,6 +66,42 @@ TEST(WebDB, PrepareQuery) {
     ASSERT_TRUE(success.ok()) << success.message();
 }
 
+TEST(WebDB, DescribePreparedStatement) {
+    auto db = make_shared<WebDB>(NATIVE);
+    WebDB::Connection conn{*db};
+    auto created = conn.RunQuery("CREATE TABLE t (id INTEGER, msg VARCHAR, level VARCHAR)");
+    ASSERT_TRUE(created.ok()) << created.status().message();
+
+    auto stmt = conn.CreatePreparedStatement("SELECT id, msg FROM t WHERE id = $id AND level = $lvl");
+    ASSERT_TRUE(stmt.ok()) << stmt.status().message();
+    auto desc = conn.DescribePreparedStatement(*stmt);
+    ASSERT_TRUE(desc.ok()) << desc.status().message();
+    ASSERT_EQ(*desc, R"JSON({"statementType":"SELECT","returnType":"QUERY_RESULT",)JSON"
+                     R"JSON("parameters":[{"name":"id","type":"INTEGER"},{"name":"lvl","type":"VARCHAR"}],)JSON"
+                     R"JSON("columns":[{"name":"id","type":"INTEGER"},{"name":"msg","type":"VARCHAR"}]})JSON");
+
+    auto insert = conn.CreatePreparedStatement("INSERT INTO t (id, msg) VALUES (?, ?)");
+    ASSERT_TRUE(insert.ok()) << insert.status().message();
+    desc = conn.DescribePreparedStatement(*insert);
+    ASSERT_TRUE(desc.ok()) << desc.status().message();
+    ASSERT_EQ(*desc, R"JSON({"statementType":"INSERT","returnType":"CHANGED_ROWS",)JSON"
+                     R"JSON("parameters":[{"name":"1","type":"INTEGER"},{"name":"2","type":"VARCHAR"}],)JSON"
+                     R"JSON("columns":[{"name":"Count","type":"BIGINT"}]})JSON");
+
+    auto unknown = conn.CreatePreparedStatement("SELECT $x AS y");
+    ASSERT_TRUE(unknown.ok()) << unknown.status().message();
+    desc = conn.DescribePreparedStatement(*unknown);
+    ASSERT_TRUE(desc.ok()) << desc.status().message();
+    ASSERT_EQ(*desc, R"JSON({"statementType":"SELECT","returnType":"QUERY_RESULT",)JSON"
+                     R"JSON("parameters":[{"name":"x","type":"UNKNOWN"}],)JSON"
+                     R"JSON("columns":[{"name":"y","type":"UNKNOWN"}]})JSON");
+
+    ASSERT_TRUE(conn.ClosePreparedStatement(*stmt).ok());
+    desc = conn.DescribePreparedStatement(*stmt);
+    ASSERT_FALSE(desc.ok());
+    ASSERT_EQ(desc.status().code(), StatusCode::KeyError);
+}
+
 TEST(WebDB, Tokenize) {
     auto db = make_shared<WebDB>(NATIVE);
     ASSERT_EQ(db->Tokenize("SELECT 1"), "{\"offsets\":[0,7],\"types\":[4,1]}");

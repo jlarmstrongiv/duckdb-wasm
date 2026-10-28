@@ -6,6 +6,7 @@ import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
 import { WebFile } from '../bindings/web_file';
 import { InstantiationProgress } from '../bindings/progress';
+import { PreparedStatementDescription } from '../bindings/prepared_statement_description';
 import { DuckDBDataProtocol } from '../bindings';
 
 export type ConnectionID = number;
@@ -20,6 +21,7 @@ export enum WorkerRequestType {
     COPY_FILE_TO_BUFFER = 'COPY_FILE_TO_BUFFER',
     COPY_FILE_TO_PATH = 'COPY_FILE_TO_PATH',
     CREATE_PREPARED = 'CREATE_PREPARED',
+    DESCRIBE_PREPARED = 'DESCRIBE_PREPARED',
     DISCONNECT = 'DISCONNECT',
     DROP_FILE = 'DROP_FILE',
     DROP_FILES = 'DROP_FILES',
@@ -60,6 +62,7 @@ export enum WorkerResponseType {
     LOG = 'LOG',
     PROGRESS_UPDATE = 'PROGRESS_UPDATE',
     OK = 'OK',
+    PREPARED_STATEMENT_DESCRIPTION = 'PREPARED_STATEMENT_DESCRIPTION',
     PREPARED_STATEMENT_ID = 'PREPARED_STATEMENT_ID',
     QUERY_PLAN = 'QUERY_PLAN',
     QUERY_RESULT = 'QUERY_RESULT',
@@ -117,6 +120,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, string>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_PATH, [string, string]>
     | WorkerRequest<WorkerRequestType.CREATE_PREPARED, [ConnectionID, string]>
+    | WorkerRequest<WorkerRequestType.DESCRIBE_PREPARED, [ConnectionID, StatementID]>
     | WorkerRequest<WorkerRequestType.DISCONNECT, number>
     | WorkerRequest<WorkerRequestType.DROP_FILE, string>
     | WorkerRequest<WorkerRequestType.DROP_FILES, string[] | undefined>
@@ -159,6 +163,7 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.LOG, LogEntryVariant>
     | WorkerResponse<WorkerResponseType.PROGRESS_UPDATE, ProgressEntry>
     | WorkerResponse<WorkerResponseType.OK, null>
+    | WorkerResponse<WorkerResponseType.PREPARED_STATEMENT_DESCRIPTION, PreparedStatementDescription>
     | WorkerResponse<WorkerResponseType.PREPARED_STATEMENT_ID, number>
     | WorkerResponse<WorkerResponseType.QUERY_PLAN, Uint8Array>
     | WorkerResponse<WorkerResponseType.QUERY_RESULT, Uint8Array>
@@ -179,6 +184,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_BUFFER, string, Uint8Array>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_PATH, [string, string], null>
     | WorkerTask<WorkerRequestType.CREATE_PREPARED, [number, string], number>
+    | WorkerTask<WorkerRequestType.DESCRIBE_PREPARED, [number, number], PreparedStatementDescription>
     | WorkerTask<WorkerRequestType.DISCONNECT, ConnectionID, null>
     | WorkerTask<WorkerRequestType.DROP_FILE, string, null>
     | WorkerTask<WorkerRequestType.DROP_FILES, string[] | undefined, null>

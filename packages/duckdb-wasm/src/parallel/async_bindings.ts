@@ -16,6 +16,7 @@ import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
 import { InstantiationProgress } from '../bindings/progress';
+import { PreparedStatementDescription } from '../bindings/prepared_statement_description';
 import { arrowToSQLField } from '../json_typedef';
 import { WebFile } from '../bindings/web_file';
 import { DuckDBDataProtocol } from '../bindings';
@@ -303,6 +304,12 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
                     return;
                 }
                 break;
+            case WorkerRequestType.DESCRIBE_PREPARED:
+                if (response.type == WorkerResponseType.PREPARED_STATEMENT_DESCRIPTION) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
         }
         task.promiseRejecter(new Error(`unexpected response type: ${response.type.toString()}`));
     }
@@ -520,6 +527,15 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             WorkerRequestType.CREATE_PREPARED,
             [conn, text],
         );
+        return await this.postTask(task);
+    }
+    /** Describe the parameters and result columns of a prepared statement */
+    public async describePrepared(conn: number, statement: number): Promise<PreparedStatementDescription> {
+        const task = new WorkerTask<
+            WorkerRequestType.DESCRIBE_PREPARED,
+            [number, number],
+            PreparedStatementDescription
+        >(WorkerRequestType.DESCRIBE_PREPARED, [conn, statement]);
         return await this.postTask(task);
     }
     /** Close a prepared statement */

@@ -1,6 +1,7 @@
 import { DuckDBConfig, DuckDBConnection, DuckDBDataProtocol, FileStatistics, InstantiationProgress } from '.';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
+import { PreparedStatementDescription } from './prepared_statement_description';
 import { WebFile } from './web_file';
 import { OPFSAccessMode } from './opfs_scratch';
 import * as arrow from 'apache-arrow';
@@ -24,6 +25,7 @@ export interface DuckDBBindings {
     getTableNames(conn: number, text: string): string[];
 
     createPrepared(conn: number, text: string): number;
+    describePrepared(conn: number, statement: number): PreparedStatementDescription;
     closePrepared(conn: number, statement: number): void;
     runPrepared(conn: number, statement: number, params: any[]): Uint8Array;
     sendPrepared(conn: number, statement: number, params: any[]): Uint8Array;

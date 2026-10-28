@@ -1,6 +1,7 @@
 import * as arrow from 'apache-arrow';
 import { DuckDBBindings } from './bindings_interface';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
+import { PreparedStatementDescription } from './prepared_statement_description';
 
 /** A thin helper to bind the connection id and talk record batches */
 export class DuckDBConnection {
@@ -157,6 +158,18 @@ export class PreparedStatement<T extends { [key: string]: arrow.DataType } = any
         this.bindings = bindings;
         this.connectionId = connectionId;
         this.statementId = statementId;
+    }
+
+    /**
+     * Describe the prepared statement without executing it.
+     *
+     * Returns the statement type, the parameters in index order and the result columns, each with its DuckDB type
+     * string (e.g. INTEGER, VARCHAR[], DECIMAL(10,2)). Positional parameters are named "1", "2", ...
+     * A parameter whose type DuckDB cannot resolve when preparing (e.g. `select $x`) has the type UNKNOWN.
+     * Throws if the statement has been closed.
+     */
+    public describe(): PreparedStatementDescription {
+        return this.bindings.describePrepared(this.connectionId, this.statementId);
     }
 
     /** Close a prepared statement */

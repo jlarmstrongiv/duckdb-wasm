@@ -2,6 +2,7 @@ import * as arrow from 'apache-arrow';
 import { AsyncDuckDB } from './async_bindings';
 import { LogLevel, LogTopic, LogOrigin, LogEvent } from '../log';
 import { ArrowInsertOptions, CSVInsertOptions, JSONInsertOptions } from '../bindings/insert_options';
+import { PreparedStatementDescription } from '../bindings/prepared_statement_description';
 
 /** A thin helper to memoize the connection id */
 export class AsyncDuckDBConnection {
@@ -179,6 +180,18 @@ export class AsyncPreparedStatement<T extends { [key: string]: arrow.DataType } 
         this.bindings = bindings;
         this.connectionId = connectionId;
         this.statementId = statementId;
+    }
+
+    /**
+     * Describe the prepared statement without executing it.
+     *
+     * Returns the statement type, the parameters in index order and the result columns, each with its DuckDB type
+     * string (e.g. INTEGER, VARCHAR[], DECIMAL(10,2)). Positional parameters are named "1", "2", ...
+     * A parameter whose type DuckDB cannot resolve when preparing (e.g. `select $x`) has the type UNKNOWN.
+     * Throws if the statement has been closed.
+     */
+    public async describe(): Promise<PreparedStatementDescription> {
+        return await this.bindings.describePrepared(this.connectionId, this.statementId);
     }
 
     /** Close a prepared statement */

@@ -9,6 +9,7 @@ import { StatusCode, IsArrowBuffer, IsDuckDBWasmRetry } from '../status';
 import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer, DuckDBDataProtocol } from './runtime';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
+import { PreparedStatementDescription } from './prepared_statement_description';
 import { FileStatistics } from './file_stats';
 import { arrowToSQLField, arrowToSQLType } from '../json_typedef';
 import { WebFile } from './web_file';
@@ -354,6 +355,17 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
         dropResponseBuffers(this.mod);
         return d;
+    }
+
+    /** Describe the parameters and result columns of a prepared statement */
+    public describePrepared(conn: number, statement: number): PreparedStatementDescription {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_prepared_describe', ['number', 'number'], [conn, statement]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        const res = readString(this.mod, d, n);
+        dropResponseBuffers(this.mod);
+        return JSON.parse(res) as PreparedStatementDescription;
     }
 
     /** Close a prepared statement */

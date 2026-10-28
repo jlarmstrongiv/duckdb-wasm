@@ -217,6 +217,19 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     );
                     break;
                 }
+                case WorkerRequestType.DESCRIBE_PREPARED: {
+                    const result = this._bindings.describePrepared(request.data[0], request.data[1]);
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.PREPARED_STATEMENT_DESCRIPTION,
+                            data: result,
+                        },
+                        [],
+                    );
+                    break;
+                }
                 case WorkerRequestType.CLOSE_PREPARED: {
                     this._bindings.closePrepared(request.data[0], request.data[1]);
                     this.sendOK(request);

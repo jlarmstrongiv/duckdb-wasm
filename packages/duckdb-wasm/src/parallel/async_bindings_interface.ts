@@ -1,6 +1,7 @@
 import { Logger } from '../log';
 import { CSVInsertOptions, JSONInsertOptions } from '../bindings/insert_options';
 import { DuckDBDataProtocol } from '../bindings';
+import { PreparedStatementDescription } from '../bindings/prepared_statement_description';
 
 /** An interface for the async DuckDB bindings */
 export interface AsyncDuckDBBindings {
@@ -25,6 +26,7 @@ export interface AsyncDuckDBBindings {
     fetchQueryResults(conn: number): Promise<Uint8Array | null>;
 
     createPrepared(conn: number, text: string): Promise<number>;
+    describePrepared(conn: number, statement: number): Promise<PreparedStatementDescription>;
     closePrepared(conn: number, statement: number): Promise<void>;
     runPrepared(conn: number, statement: number, params: any[]): Promise<Uint8Array>;
     sendPrepared(conn: number, statement: number, params: any[]): Promise<Uint8Array>;

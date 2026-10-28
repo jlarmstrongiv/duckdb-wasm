@@ -136,6 +136,8 @@ class WebDB {
         /// Execute a prepared statement with the given parameters in stringifed json format and stream result
         web::Result<std::shared_ptr<web::Buffer>> SendPreparedStatement(size_t statement_id,
                                                                         std::string_view args_json);
+        /// Describe the parameters, result columns and statement type of a prepared statement as json
+        web::Result<std::string> DescribePreparedStatement(size_t statement_id);
         /// Close a prepared statement by its identifier
         web::Status ClosePreparedStatement(size_t statement_id);
 
